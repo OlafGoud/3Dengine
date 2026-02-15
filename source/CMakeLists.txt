@@ -104,7 +104,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${glm_SOURCE_DIR}
     ${nuklear_SOURCE_DIR}
     ${stb_SOURCE_DIR}  
-
 )
 
 # -----------------------------

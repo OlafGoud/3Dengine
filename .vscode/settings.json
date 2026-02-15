@@ -1,0 +1,7 @@
+{
+  "cmake.sourceDirectory": "/home/olaf/Desktop/3Dengine/source",
+  "clangd.arguments": [
+    "-background-index",
+    "-compile-commands-dir=bin"
+  ]
+}

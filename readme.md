@@ -1,14 +1,14 @@
 
 cmake
 ```
-cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -S source -B bin\
+cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S source -B bin
 cmake --build bin
 ```
 
 
 ## Modules
-- render
-- input
+- RENDERER
+- INPUT
   - USER
     - KEYBOARD
     - MOUSE/MOUSEPAD/TRACKPAD
@@ -17,6 +17,7 @@ cmake --build bin
     - TEXT
       - CONFIG
       - SHADER
-      - ETC
+      - ETC.
   - API
-- 
+    - connections to web??
+- ADDON MANAGER
