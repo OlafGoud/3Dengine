@@ -12,17 +12,18 @@ const unsigned int SCR_HEIGHT = 600;
 const int GRID_SIZE = 20;
 
 // ---------------- Globals ----------------
-glm::vec3 cameraPos   = glm::vec3(8.0f, 8.0f, 8.0f);
-glm::vec3 cameraTarget= glm::vec3(0.0f, 0.0f, 0.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 cameraPos    = glm::vec3(8.0f, 8.0f, 8.0f);
+glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 cameraUp     = glm::vec3(0.0f, 1.0f, 0.0f);
 
 glm::mat4 projection;
 glm::mat4 view;
 
-std::vector<float> vertices;       // x,y,z
-std::vector<unsigned int> indices; // triangles
-std::vector<float> colors;         // r,g,b
-GLuint VAO, VBO, EBO, CBO;
+std::vector<float> vertices; // x,y,z
+std::vector<float> colors;   // r,g,b
+std::vector<float> normals;  // nx,ny,nz
+
+GLuint VAO, VBO, CBO, NBO;
 
 // ---------------- Ray-Triangle Intersection ----------------
 bool rayTriangleIntersect(
@@ -68,20 +69,20 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         float closest_t = 10000.0f;
         int hitTri = -1;
 
-        // Test each triangle
-        for (size_t i = 0; i < indices.size(); i += 3)
+        // Each triangle has 3 unique vertices now
+        for (size_t i = 0; i < vertices.size(); i += 9)
         {
-            glm::vec3 v0(vertices[3*indices[i]+0], vertices[3*indices[i]+1], vertices[3*indices[i]+2]);
-            glm::vec3 v1(vertices[3*indices[i+1]+0], vertices[3*indices[i+1]+1], vertices[3*indices[i+1]+2]);
-            glm::vec3 v2(vertices[3*indices[i+2]+0], vertices[3*indices[i+2]+1], vertices[3*indices[i+2]+2]);
+            glm::vec3 v0(vertices[i+0], vertices[i+1], vertices[i+2]);
+            glm::vec3 v1(vertices[i+3], vertices[i+4], vertices[i+5]);
+            glm::vec3 v2(vertices[i+6], vertices[i+7], vertices[i+8]);
 
             float t;
-            if(rayTriangleIntersect(cameraPos, ray_world, v0,v1,v2,t))
+            if(rayTriangleIntersect(cameraPos, ray_world, v0, v1, v2, t))
             {
                 if(t < closest_t)
                 {
                     closest_t = t;
-                    hitTri = i;
+                    hitTri = (int)i;
                 }
             }
         }
@@ -91,15 +92,15 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             // Color the triangle red
             for(int j=0;j<3;j++)
             {
-                colors[3*indices[hitTri+j]+0] = 1.0f;
-                colors[3*indices[hitTri+j]+1] = 0.0f;
-                colors[3*indices[hitTri+j]+2] = 0.0f;
+                colors[hitTri + j*3 + 0] = 1.0f;
+                colors[hitTri + j*3 + 1] = 0.0f;
+                colors[hitTri + j*3 + 2] = 0.0f;
             }
 
             // Update color buffer
             glBindBuffer(GL_ARRAY_BUFFER, CBO);
             glBufferSubData(GL_ARRAY_BUFFER, 0, colors.size()*sizeof(float), colors.data());
-            std::cout << "Triangle clicked: vertices " << hitTri << " to " << hitTri+2 << "\n";
+            std::cout << "Triangle clicked: vertices " << hitTri << " to " << hitTri+8 << "\n";
         }
     }
 }
@@ -120,92 +121,73 @@ int main()
 
     glViewport(0,0,SCR_WIDTH,SCR_HEIGHT);
     glEnable(GL_DEPTH_TEST);
-
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-    // ---------------- Generate Grid ----------------
-    float half = GRID_SIZE/2.0f;
+    // ---------------- Generate Grid (Non-Shared Vertices) ----------------
+    float half = GRID_SIZE / 2.0f;
+    std::vector<glm::vec3> gridPositions;
     for(int z=0; z<=GRID_SIZE; z++){
-        for(int x=0;x<=GRID_SIZE;x++){
-            vertices.push_back(x-half);
-            vertices.push_back((float)(rand()%10)/20);
-            vertices.push_back(z-half);
-
-            colors.push_back(1.0f);
-            colors.push_back(1.0f);
-            colors.push_back(1.0f);
+        for(int x=0; x<=GRID_SIZE; x++){
+            gridPositions.push_back(glm::vec3(x-half, (float)(rand()%10)/20.0f, z-half));
         }
     }
 
-    for(int z=0;z<GRID_SIZE;z++){
-        for(int x=0;x<GRID_SIZE;x++){
+    for(int z=0; z<GRID_SIZE; z++){
+        for(int x=0; x<GRID_SIZE; x++){
             int topLeft     =  z      * (GRID_SIZE + 1) + x;
             int topRight    =  topLeft + 1;
             int bottomLeft  = (z + 1) * (GRID_SIZE + 1) + x;
             int bottomRight =  bottomLeft + 1;
 
-            indices.push_back(topLeft);
-            indices.push_back(bottomLeft);
-            indices.push_back(topRight);
+            // First triangle
+            std::vector<glm::vec3> tri1 = { gridPositions[topLeft], gridPositions[bottomLeft], gridPositions[topRight] };
+            glm::vec3 normal1 = glm::normalize(glm::cross(tri1[1]-tri1[0], tri1[2]-tri1[0]));
+            for(auto &v : tri1){
+                vertices.push_back(v.x); vertices.push_back(v.y); vertices.push_back(v.z);
+                colors.push_back(1.0f); colors.push_back(1.0f); colors.push_back(1.0f);
+                normals.push_back(normal1.x); normals.push_back(normal1.y); normals.push_back(normal1.z);
+            }
 
-            indices.push_back(topRight);
-            indices.push_back(bottomLeft);
-            indices.push_back(bottomRight);
-        }
-    }
-
-    std::vector<float> normals(vertices.size(), 0.0f);
-
-    // After indices generation
-    for(size_t i=0;i<indices.size();i+=3)
-    {
-        unsigned int i0 = indices[i];
-        unsigned int i1 = indices[i+1];
-        unsigned int i2 = indices[i+2];
-
-        glm::vec3 v0(vertices[3*i0], vertices[3*i0+1], vertices[3*i0+2]);
-        glm::vec3 v1(vertices[3*i1], vertices[3*i1+1], vertices[3*i1+2]);
-        glm::vec3 v2(vertices[3*i2], vertices[3*i2+1], vertices[3*i2+2]);
-
-        glm::vec3 normal = glm::normalize(glm::cross(v1-v0, v2-v0));
-
-        for(int j=0;j<3;j++){
-            normals[3*indices[i+j]+0] = normal.x;
-            normals[3*indices[i+j]+1] = normal.y;
-            normals[3*indices[i+j]+2] = normal.z;
+            // Second triangle
+            std::vector<glm::vec3> tri2 = { gridPositions[topRight], gridPositions[bottomLeft], gridPositions[bottomRight] };
+            glm::vec3 normal2 = glm::normalize(glm::cross(tri2[1]-tri2[0], tri2[2]-tri2[0]));
+            for(auto &v : tri2){
+                vertices.push_back(v.x); vertices.push_back(v.y); vertices.push_back(v.z);
+                colors.push_back(1.0f); colors.push_back(1.0f); colors.push_back(1.0f);
+                normals.push_back(normal2.x); normals.push_back(normal2.y); normals.push_back(normal2.z);
+            }
         }
     }
 
     // ---------------- Buffers ----------------
     glGenVertexArrays(1,&VAO);
     glGenBuffers(1,&VBO);
-    glGenBuffers(1,&EBO);
     glGenBuffers(1,&CBO);
+    glGenBuffers(1,&NBO);
 
     glBindVertexArray(VAO);
 
-    glBindBuffer(GL_ARRAY_BUFFER,VBO);
-    glBufferData(GL_ARRAY_BUFFER,vertices.size()*sizeof(float),vertices.data(),GL_STATIC_DRAW);
+    // Vertex positions
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(float), vertices.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,3*sizeof(float),(void*)0);
     glEnableVertexAttribArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER,CBO);
-    glBufferData(GL_ARRAY_BUFFER,colors.size()*sizeof(float),colors.data(),GL_DYNAMIC_DRAW);
+    // Colors
+    glBindBuffer(GL_ARRAY_BUFFER, CBO);
+    glBufferData(GL_ARRAY_BUFFER, colors.size()*sizeof(float), colors.data(), GL_DYNAMIC_DRAW);
     glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,3*sizeof(float),(void*)0);
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.size()*sizeof(unsigned int),indices.data(),GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-    GLuint NBO;
-    glGenBuffers(1, &NBO);
+    // Normals
     glBindBuffer(GL_ARRAY_BUFFER, NBO);
     glBufferData(GL_ARRAY_BUFFER, normals.size()*sizeof(float), normals.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(2,3,GL_FLOAT,GL_FALSE,3*sizeof(float),(void*)0);
     glEnableVertexAttribArray(2);
 
+    glBindVertexArray(0);
 
+    // ---------------- Shader ----------------
     Shader shader("bin/resources/shaders/shader.vs","bin/resources/shaders/shader.fs");
     //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 
@@ -220,9 +202,7 @@ int main()
         view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
         projection = glm::perspective(glm::radians(45.0f),(float)SCR_WIDTH/(float)SCR_HEIGHT,0.1f,100.0f);
 
-        glm::mat4 mvp = projection * view * model;
-        shader.setMat4("uMVP",mvp);
-        shader.setMat4("uMVP", mvp);
+        shader.setMat4("uMVP", projection * view * model);
         shader.setMat4("uModel", model);
 
         // Lighting
@@ -230,7 +210,7 @@ int main()
         shader.setVec3("viewPos", cameraPos);
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES,(GLsizei)indices.size(),GL_UNSIGNED_INT,0);
+        glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size()/3);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
