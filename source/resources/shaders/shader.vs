@@ -10,10 +10,9 @@ out vec3 FragColor;
 out vec3 FragPos;
 out vec3 Normal;
 
-void main()
-{
-    FragPos = vec3(uModel * vec4(aPos,1.0));
-    Normal = mat3(transpose(inverse(uModel))) * aNormal;
-    FragColor = aColor;
-    gl_Position = uMVP * vec4(aPos,1.0);
+void main() {
+  FragPos = vec3(uModel * vec4(aPos,1.0));
+  Normal = mat3(transpose(inverse(uModel))) * aNormal;
+  FragColor = aColor;
+  gl_Position = uMVP * vec4(aPos,1.0);
 }
