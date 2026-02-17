@@ -8,6 +8,8 @@ cmake --build bin
 
 ## Modules
 - RENDERER
+  - WORLD
+  - Objects
 - INPUT
   - USER
     - KEYBOARD
@@ -21,3 +23,13 @@ cmake --build bin
   - API
     - connections to web??
 - ADDON MANAGER
+
+
+TILE (square 2 triangles)
+- Postition
+  - x,z
+  - 6x height
+  - slope
+- Structure
+  - farmland.
+  - settlement.

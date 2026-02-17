@@ -1,13 +1,11 @@
-
-
 #ifndef CAMERA_H
 #define CAMERA_H
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
 
-// Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement {
   FORWARD,
   BACKWARD,
@@ -15,111 +13,115 @@ enum Camera_Movement {
   RIGHT
 };
 
-// Default camera values
 const float YAW         = -90.0f;
-const float PITCH       =  0.0f;
-const float SPEED       =  2.5f;
-const float SENSITIVITY =  0.1f;
-const float ZOOM        =  45.0f;
+const float PITCH       = -45.0f;     // tilted downward
+const float SPEED       = 10.0f;
+const float SENSITIVITY = 0.2f;
+const float ZOOM        = 20.0f;
 
-
-// An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
-class Camera
-{
+class Camera {
 public:
-  // camera Attributes
+  // Camera state
   glm::vec3 Position;
-  glm::vec3 Front;
+  glm::vec3 Target;      // point camera looks at
   glm::vec3 Up;
-  glm::vec3 Right;
-  glm::vec3 WorldUp;
-  // euler Angles
+
   float Yaw;
   float Pitch;
-  // camera options
+  float Distance;        // zoom distance
+
   float MovementSpeed;
   float MouseSensitivity;
-  float Zoom;
 
-  // constructor with vectors
-  Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
-  {
-      Position = position;
-      WorldUp = up;
-      Yaw = yaw;
-      Pitch = pitch;
-      updateCameraVectors();
-  }
-  // constructor with scalar values
-  Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM) {
-    Position = glm::vec3(posX, posY, posZ);
-    WorldUp = glm::vec3(upX, upY, upZ);
-    Yaw = yaw;
-    Pitch = pitch;
-    updateCameraVectors();
+  Camera(glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f)) : Yaw(YAW), Pitch(PITCH), Distance(ZOOM), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY) {
+    Target = target;
+    Up = glm::vec3(0.0f, 1.0f, 0.0f);
+    updateCameraPosition();
   }
 
-  // returns the view matrix calculated using Euler Angles and the LookAt Matrix
   glm::mat4 GetViewMatrix() {
-    return glm::lookAt(Position, Position + Front, Up);
+    return glm::lookAt(Position, Target, Up);
   }
 
-  // processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
+  // Move target on XZ plane
   void ProcessKeyboard(Camera_Movement direction, float deltaTime) {
     float velocity = MovementSpeed * deltaTime;
+
+    glm::vec3 forward = glm::normalize(glm::vec3(
+      cos(glm::radians(Yaw)),
+      0.0f,
+      sin(glm::radians(Yaw))
+    ));
+
+    glm::vec3 right = glm::normalize(glm::cross(forward, Up));
+
     if (direction == FORWARD)
-      Position += Front * velocity;
+      Target += forward * velocity;
     if (direction == BACKWARD)
-      Position -= Front * velocity;
+      Target -= forward * velocity;
     if (direction == LEFT)
-      Position -= Right * velocity;
+      Target -= right * velocity;
     if (direction == RIGHT)
-      Position += Right * velocity;
+      Target += right * velocity;
+
+    updateCameraPosition();
   }
 
-  // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-  void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true) {
+  void ProcessMouseXYMovement(float xoffset, float yoffset) {
+    glm::vec3 forward = glm::normalize(glm::vec3(
+      cos(glm::radians(Yaw)),
+      0.0f,
+      sin(glm::radians(Yaw))
+    ));
+
+    glm::vec3 right = glm::normalize(glm::cross(forward, Up));
+    
+    yoffset = yoffset * 0.2;
+    xoffset = xoffset * 0.2;
+
+    Target += forward * xoffset;
+    Target += right * yoffset;
+
+    updateCameraPosition();
+  }
+
+  // Rotate around target
+  void ProcessMouseRotation(float xoffset, float yoffset, GLboolean constrainPitch = true) {
     xoffset *= MouseSensitivity;
     yoffset *= MouseSensitivity;
 
     Yaw   += xoffset;
     Pitch += yoffset;
 
-    // make sure that when pitch is out of bounds, screen doesn't get flipped
-    if (constrainPitch)
-    {
-        if (Pitch > 89.0f)
-            Pitch = 89.0f;
-        if (Pitch < -89.0f)
-            Pitch = -89.0f;
+    if (constrainPitch) {
+      if (Pitch > -10.0f) Pitch = -10.0f;   // prevent flipping
+      if (Pitch < -89.0f) Pitch = -89.0f;
     }
 
-    // update Front, Right and Up Vectors using the updated Euler angles
-    updateCameraVectors();
+    updateCameraPosition();
   }
 
-  // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
+  // Zoom in/out
   void ProcessMouseScroll(float yoffset) {
-    Zoom -= (float)yoffset;
-    if (Zoom < 1.0f)
-      Zoom = 1.0f;
-    if (Zoom > 45.0f)
-      Zoom = 45.0f;
+    Distance -= yoffset;
+
+    if (Distance < 5.0f)  Distance = 5.0f;
+    if (Distance > 100.0f) Distance = 100.0f;
+
+    updateCameraPosition();
   }
 
 private:
-  // calculates the front vector from the Camera's (updated) Euler Angles
-  void updateCameraVectors() {
-    // calculate the new Front vector
-    glm::vec3 front;
-    front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    front.y = sin(glm::radians(Pitch));
-    front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    Front = glm::normalize(front);
-    // also re-calculate the Right and Up vector
-    Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-    Up    = glm::normalize(glm::cross(Right, Front));
+
+  void updateCameraPosition() {
+    glm::vec3 direction;
+
+    direction.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+    direction.y = sin(glm::radians(Pitch));
+    direction.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+
+    Position = Target - glm::normalize(direction) * Distance;
   }
 };
-#endif
 
+#endif
