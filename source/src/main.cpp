@@ -122,7 +122,7 @@ int main() {
 
   for(int i=0;i<1;i++) {
     glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(0,0,0));
-    m = glm::scale(m, glm::vec3(10.0));
+    m = glm::scale(m, glm::vec3(5.0f));
     transforms.push_back(m);
     std::cout << "added\n";
   }
@@ -155,7 +155,11 @@ glDisable(GL_CULL_FACE);
     glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size()/3);
 
     modelshader.use();
-    castle.drawInstancedCulled(transforms, projection * view, modelshader.getID());
+    glUniformMatrix4fv(glGetUniformLocation(modelshader.getID(), "view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(modelshader.getID(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+
+    castle.drawInstanced(transforms, modelshader.getID());
 
     glfwSwapBuffers(window);
     glfwPollEvents();

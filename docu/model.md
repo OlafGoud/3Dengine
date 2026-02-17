@@ -1,6 +1,5 @@
-#ifndef GUARD1
-#define GUARD1
-#pragma once
+```cpp
+// main.cpp
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <assimp/Importer.hpp>
@@ -187,4 +186,114 @@ private:
     return tex;
   }
 };
-#endif
+
+// --------------------- Shaders ---------------------
+const char *vertexShaderSrc = R"(
+#version 330 core
+layout(location=0) in vec3 aPos;
+layout(location=1) in vec3 aNormal;
+layout(location=2) in vec2 aUV;
+layout(location=3) in mat4 instanceMatrix;
+
+uniform mat4 view;
+uniform mat4 projection;
+
+out vec2 TexCoords;
+
+void main(){
+    TexCoords = aUV;
+    gl_Position = projection * view * instanceMatrix * vec4(aPos,1.0);
+})";
+
+const char *fragmentShaderSrc = R"(
+#version 330 core
+out vec4 FragColor;
+in vec2 TexCoords;
+uniform sampler2D texture_diffuse0;
+void main(){
+    FragColor = texture(texture_diffuse0,TexCoords);
+})";
+
+// --------------------- Helper ---------------------
+GLuint compileShader(GLenum type, const char *src) {
+  GLuint shader = glCreateShader(type);
+  glShaderSource(shader, 1, &src, nullptr);
+  glCompileShader(shader);
+  int success;
+  char log[512];
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(shader, 512, nullptr, log);
+    std::cout << log << "\n";
+  }
+  return shader;
+}
+
+GLuint createProgram(const char *vs, const char *fs) {
+  GLuint vertex = compileShader(GL_VERTEX_SHADER, vs);
+  GLuint fragment = compileShader(GL_FRAGMENT_SHADER, fs);
+  GLuint prog = glCreateProgram();
+  glAttachShader(prog, vertex);
+  glAttachShader(prog, fragment);
+  glLinkProgram(prog);
+  int success;
+  char log[512];
+  glGetProgramiv(prog, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(prog, 512, nullptr, log);
+    std::cout << log << "\n";
+  }
+  glDeleteShader(vertex);
+  glDeleteShader(fragment);
+  return prog;
+}
+
+// --------------------- Main ---------------------
+int main() {
+  glfwInit();
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  GLFWwindow *window = glfwCreateWindow(800, 600, "OBJ Demo", nullptr, nullptr);
+  glfwMakeContextCurrent(window);
+  gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+  glEnable(GL_DEPTH_TEST);
+
+  GLuint shader = createProgram(vertexShaderSrc, fragmentShaderSrc);
+
+  // Load model
+  Model castle("bin/resources/models/castle.obj"); // <--- change to your path
+
+  // Single instance transform
+  std::vector<glm::mat4> transforms;
+  glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
+  m = glm::scale(m, glm::vec3(1.0f));
+  transforms.push_back(m);
+
+  // Camera
+  glm::mat4 view =
+      glm::lookAt(glm::vec3(0, 5, 15), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+  glm::mat4 projection =
+      glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+
+  while (!glfwWindowShouldClose(window)) {
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(shader);
+    glUniformMatrix4fv(glGetUniformLocation(shader, "view"), 1, GL_FALSE,
+                       glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(shader, "projection"), 1, GL_FALSE,
+                       glm::value_ptr(projection));
+
+    castle.drawInstanced(transforms, shader);
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+
+  glfwTerminate();
+  return 0;
+}
+
+```
