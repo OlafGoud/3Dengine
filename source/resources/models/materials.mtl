@@ -1,0 +1,10 @@
+# Made in Blockbench 5.0.7
+newmtl m_804f7988-3943-4a6f-3bab-32ef5e5ebaa5
+map_Kd roof.png
+newmtl m_e2729913-9293-8a71-f439-198aebc535ea
+map_Kd Wall.png
+newmtl m_f443a35e-28d8-0c59-e2d0-d3d2ca9fd507
+map_Kd Rock.png
+newmtl m_55b8b13e-f782-f19b-5a97-b53a318a6b94
+map_Kd wood.png
+newmtl none

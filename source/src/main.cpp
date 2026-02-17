@@ -5,9 +5,11 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
 #include <iostream>
+#include "glm/ext/matrix_transform.hpp"
 #include "shader.h"
 #include "camera.h"
 #include "userinput.h"
+#include "model.h"
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
@@ -112,7 +114,19 @@ int main() {
   glBindVertexArray(0);
   // ---------------- Shader ----------------
   Shader shader("bin/resources/shaders/shader.vs","bin/resources/shaders/shader.fs");
+  Shader modelshader("bin/resources/shaders/model.vs","bin/resources/shaders/model.fs");
+  Model castle("bin/resources/models/castle.obj");
  // glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+
+ std::vector<glm::mat4> transforms;
+
+  for(int i=0;i<1;i++) {
+    glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(0,0,0));
+    m = glm::scale(m, glm::vec3(10.0));
+    transforms.push_back(m);
+    std::cout << "added\n";
+  }
+glDisable(GL_CULL_FACE);
 
   // ---------------- Main Loop ----------------
   while(!glfwWindowShouldClose(window)) {
@@ -139,6 +153,9 @@ int main() {
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size()/3);
+
+    modelshader.use();
+    castle.drawInstancedCulled(transforms, projection * view, modelshader.getID());
 
     glfwSwapBuffers(window);
     glfwPollEvents();

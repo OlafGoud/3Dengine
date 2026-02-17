@@ -59,7 +59,9 @@ void Shader::setMat4(const std::string &name, glm::mat4 mat) const {
 
 
 
-
+GLuint Shader::getID() const {
+  return this->ID;
+}
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath) {
 
