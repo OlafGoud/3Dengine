@@ -42,7 +42,8 @@ void RenderTerrain::checkForClick(float xPos, float yPos, Camera &camera) {
       /** do shit */
       chunk.setColor(sqX, sqZ, glm::vec3(0.1f, 0.01f, 1.0f));
       chunk.changeHeight(sqX, sqZ, -0.1f);
-      std::cout << " dsaf\n";
+      std::cout << "x: " << sqX + chunk.position.x << ", z: " << sqZ + chunk.position.z << "\n"; 
+      break;
     }
   }
 }
@@ -56,9 +57,9 @@ Chunk::Chunk(int worldX, int worldZ) {
 
   for (int z = 0; z <= GRID_SIZE; z++) {
     for (int x = 0; x <= GRID_SIZE; x++) {
-      vertices.push_back(x - half + (CHUNK_SIZE * worldX));
+      vertices.push_back(x + (CHUNK_SIZE * worldX));
       vertices.push_back((float)(rand() % 3) / 4);
-      vertices.push_back(z - half + (CHUNK_SIZE * worldZ));
+      vertices.push_back(z + (CHUNK_SIZE * worldZ));
 
       normals.push_back(0);
       normals.push_back(1);

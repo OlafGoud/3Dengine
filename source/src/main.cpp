@@ -128,7 +128,7 @@ int main() {
     glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(rand() %10 - 5,0,rand()%10 - 5));
     m = glm::scale(m, glm::vec3(3.0f));
     transforms.push_back(m);
-    std::cout << "added\n";
+    //std::cout << "added\n";
   }
   glDisable(GL_CULL_FACE);
 

@@ -8,11 +8,6 @@
 #include "render.h"
 
 
-/*
-
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
-*/
-
 extern std::vector<float> vertices; // x,y,z
 extern std::vector<float> colors;   // r,g,b
 
