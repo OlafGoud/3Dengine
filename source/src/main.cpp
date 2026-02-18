@@ -6,14 +6,14 @@
 #include <vector>
 #include <iostream>
 #include "glm/ext/matrix_transform.hpp"
-#include "shader.h"
 #include "camera.h"
-#include "userinput.h"
+#include "render.h"
 #include "model.h"
+#include "userinput.h"
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-const int GRID_SIZE = 40;
+const int GRID_SIZE = 100;
 
 // ---------------- Globals ----------------
 glm::mat4 projection;
@@ -46,8 +46,12 @@ int main() {
 
   glViewport(0,0,SCR_WIDTH,SCR_HEIGHT);
   glEnable(GL_DEPTH_TEST);
-  
+
+  Shader terrainShader("bin/resources/shaders/terrain.vs", "bin/resources/shaders/terrain.fs");
+
   user.setInputCallbacks(window);
+  user.renderObjects.push_back(RenderTerrain(&terrainShader));
+
 
   // ---------------- Generate Grid (Non-Shared Vertices) ----------------
   float half = GRID_SIZE / 2.0f;
@@ -118,15 +122,15 @@ int main() {
   Model castle("bin/resources/models/castle.obj");
  // glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 
- std::vector<glm::mat4> transforms;
+  std::vector<glm::mat4> transforms;
 
-  for(int i=0;i<1;i++) {
-    glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(0,0,0));
-    m = glm::scale(m, glm::vec3(5.0f));
+  for(int i=0;i<5;i++) {
+    glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(rand() %10 - 5,0,rand()%10 - 5));
+    m = glm::scale(m, glm::vec3(3.0f));
     transforms.push_back(m);
     std::cout << "added\n";
   }
-glDisable(GL_CULL_FACE);
+  glDisable(GL_CULL_FACE);
 
   // ---------------- Main Loop ----------------
   while(!glfwWindowShouldClose(window)) {
@@ -134,6 +138,7 @@ glDisable(GL_CULL_FACE);
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
+    std::cout << "framerate: " << (1/deltaTime) << "\n";
 
     glClearColor(0.1f,0.1f,0.1f,1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -142,7 +147,7 @@ glDisable(GL_CULL_FACE);
     shader.use();
     glm::mat4 model = glm::mat4(1.0f);
     view = user.camera.GetViewMatrix();
-    projection = glm::perspective(glm::radians(user.camera.Distance), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    projection = user.camera.getProjectionMatrix();
 
     shader.setMat4("uMVP", projection * view * model);
     shader.setMat4("uModel", model);
@@ -152,14 +157,13 @@ glDisable(GL_CULL_FACE);
     shader.setVec3("viewPos", user.camera.Position);
 
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size()/3);
+    //glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size()/3);
 
     modelshader.use();
     glUniformMatrix4fv(glGetUniformLocation(modelshader.getID(), "view"), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(glGetUniformLocation(modelshader.getID(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
-
     castle.drawInstanced(transforms, modelshader.getID());
+    user.renderObjects.at(0).render(user.camera);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

@@ -4,7 +4,6 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <iostream>
 
 enum Camera_Movement {
   FORWARD,
@@ -32,6 +31,9 @@ public:
 
   float MovementSpeed;
   float MouseSensitivity;
+  unsigned int SCR_WIDTH = 800;
+  unsigned int SCR_HEIGHT = 600;
+
 
   Camera(glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f)) : Yaw(YAW), Pitch(PITCH), Distance(ZOOM), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY) {
     Target = target;
@@ -41,6 +43,10 @@ public:
 
   glm::mat4 GetViewMatrix() {
     return glm::lookAt(Position, Target, Up);
+  }
+
+  glm::mat4 getProjectionMatrix() {
+    return glm::perspective(glm::radians(this->Distance), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
   }
 
   // Move target on XZ plane

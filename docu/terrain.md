@@ -262,8 +262,7 @@ public:
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, CBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, colors.size() * sizeof(float),
-                    colors.data());
+    glBufferSubData(GL_ARRAY_BUFFER, 0, colors.size() * sizeof(float), colors.data());
   }
 };
 

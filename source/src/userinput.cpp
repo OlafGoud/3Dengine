@@ -67,7 +67,7 @@ void User::keyboardInput(GLFWwindow *window, float deltaTime) {
     this->pressedKeys[GLFW_KEY_1] = 1;
   }
   if(glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS && this->pressedKeys[GLFW_KEY_2] == 0) {
-    this->structure == 2 ? this->structure = -2 : this->structure = 2;
+    this->structure == 2 ? this->structure = -1 : this->structure = 2;
     std::cout << "number: " << this->structure << "\n";
     this->pressedKeys[GLFW_KEY_2] = 1;
   }
@@ -102,7 +102,11 @@ void User::mouseButtonInput(GLFWwindow* window, int button, int action, int mods
   if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
     if(this->structure > 0 && this->structure < 3) {
       /** build structure */
-      calculateClickPosition(window);
+      //calculateClickPosition(window);
+      double xpos, ypos;
+      glfwGetCursorPos(window, &xpos, &ypos);
+
+      this->renderObjects.at(0).checkForClick(xpos, ypos, user.camera);
     }
   }
   

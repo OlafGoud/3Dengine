@@ -1,8 +1,12 @@
+#pragma once
 #include "camera.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <cstdint>
+#include <vector>
+#include "render.h"
+
 
 /*
 
@@ -27,6 +31,8 @@ public:
   void keyboardInput(GLFWwindow *window, float deltaTime);
 
   Camera camera;
+  std::vector<RenderTerrain> renderObjects;
+
 private:
 
 void calculateClickPosition(GLFWwindow* window);
