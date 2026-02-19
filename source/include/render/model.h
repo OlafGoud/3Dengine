@@ -1,15 +1,16 @@
+#pragma once
 #ifndef GUARD1
 #define GUARD1
-#pragma once
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/fwd.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#define STB_IMAGE_IMPLEMENTATION
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include "stb_image.h"
 
 #include <iostream>
@@ -96,7 +97,6 @@ struct Model {
   std::unordered_map<std::string, GLuint> loadedTextures;
 
   Model(const std::string &path) { load(path); }
-
   void drawInstanced(const std::vector<glm::mat4> &instances, GLuint shader) {
     for (auto &m : meshes) {
       m.updateInstances(instances);
@@ -187,4 +187,44 @@ private:
     return tex;
   }
 };
+
+
+class ModelObject {
+public:
+  ModelObject(glm::vec3 position, Model* model) {
+    this->model = model;
+    this->positions.insert({makeKey(position.x, position.z), glm::translate(glm::mat4(1.0f), position)});
+
+  }
+
+  void render(GLuint shader) {
+
+    std::vector<glm::mat4> values;
+    values.reserve(positions.size());
+    for(auto it : positions) {
+      values.push_back(it.second);
+    }
+
+    model->drawInstanced(values, shader);
+  }
+
+  long long makeKey(int x, int z) {
+    return ((long long) x << 32) | (unsigned int)z;
+  }
+
+  glm::mat4* getPosition(int x, int z) {
+
+    auto it = positions.find(makeKey(x, z));
+    if(it != positions.end()) return &it->second;
+
+    return nullptr;
+  }
+  
+
+
+private:
+  std::unordered_map<long long, glm::mat4> positions;
+  Model* model;
+};
+
 #endif

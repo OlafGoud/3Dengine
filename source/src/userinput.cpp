@@ -3,9 +3,6 @@
 #include "camera.h"
 #include <iostream>
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
-
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
   user.mouseScrollInput(yoffset);
@@ -15,7 +12,8 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 }
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, width, height);
-  /** @todo fix all other things to be updated with the size */
+  user.camera.SCR_WIDTH = width;
+  user.camera.SCR_HEIGHT = height;
 }
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
   user.mouseButtonInput(window, button, action, mods);
@@ -134,73 +132,6 @@ void User::mouseButtonInput(GLFWwindow* window, int button, int action, int mods
   
   if(button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS) {
     
-  }
-}
-
-bool User::rayTriangleIntersect(const glm::vec3 &orig, const glm::vec3 &dir, const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, float &t) {
-  const float EPSILON = 0.0000001f;
-  glm::vec3 edge1 = v1 - v0;
-  glm::vec3 edge2 = v2 - v0;
-  glm::vec3 h = glm::cross(dir, edge2);
-  float a = glm::dot(edge1, h);
-  if (a > -EPSILON && a < EPSILON) return false; // parallel
-  
-  float f = 1.0f / a;
-  glm::vec3 s = orig - v0;
-  float u = f * glm::dot(s, h);
-  if (u < 0.0 || u > 1.0) return false;
-  glm::vec3 q = glm::cross(s, edge1);
-  float v = f * glm::dot(dir, q);
-  if (v < 0.0 || u + v > 1.0) return false;
-  t = f * glm::dot(edge2, q);
-  if (t > EPSILON) return true;
-  return false;
-}
-
-void User::calculateClickPosition(GLFWwindow* window) {
-  /** check if not in menu etc*/
-
-
-  double xpos, ypos;
-  glfwGetCursorPos(window, &xpos, &ypos);
-
-  float x = (2.0f * xpos) / SCR_WIDTH - 1.0f;
-  float y = 1.0f - (2.0f * ypos) / SCR_HEIGHT;
-
-  glm::vec4 ray_clip = glm::vec4(x, y, -1.0f, 1.0f);
-  glm::vec4 ray_eye = glm::inverse(glm::perspective(glm::radians(user.camera.Distance), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f)) * ray_clip;
-  ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0f, 0.0f);
-  glm::vec3 ray_world = glm::normalize(glm::vec3(glm::inverse(this->camera.GetViewMatrix()) * ray_eye));
-  float closest_t = 10000.0f;
-  int hitTri = -1;
-
-  // Each triangle has 3 unique vertices now
-  for (size_t i = 0; i < vertices.size(); i += 9) {
-    glm::vec3 v0(vertices[i+0], vertices[i+1], vertices[i+2]);
-    glm::vec3 v1(vertices[i+3], vertices[i+4], vertices[i+5]);
-    glm::vec3 v2(vertices[i+6], vertices[i+7], vertices[i+8]);
-
-    float t;
-    if(this->rayTriangleIntersect(user.camera.Position, ray_world, v0, v1, v2, t)) {
-      if(t < closest_t) {
-        closest_t = t;
-        hitTri = (int)i;
-      }
-    }
-  }
-
-  if(hitTri != -1) {
-    // Color the triangle red
-    for(int j=0;j<3;j++) {
-      colors[hitTri + j*3 + 0] = this->structureColors[structure].r;
-      colors[hitTri + j*3 + 1] = this->structureColors[structure].g;
-      colors[hitTri + j*3 + 2] = this->structureColors[structure].b;
-    }
-
-    // Update color buffer
-    glBindBuffer(GL_ARRAY_BUFFER, CBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, colors.size()*sizeof(float), colors.data());
-    std::cout << "Triangle clicked: vertices " << hitTri << " to " << hitTri+8 << "\n";
   }
 }
 

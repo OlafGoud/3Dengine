@@ -31,8 +31,8 @@ public:
 
   float MovementSpeed;
   float MouseSensitivity;
-  unsigned int SCR_WIDTH = 800;
-  unsigned int SCR_HEIGHT = 600;
+  unsigned int SCR_WIDTH = (int)800;
+  unsigned int SCR_HEIGHT = (int)600;
 
 
   Camera(glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f)) : Yaw(YAW), Pitch(PITCH), Distance(ZOOM), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY) {

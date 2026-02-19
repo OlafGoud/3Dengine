@@ -10,13 +10,11 @@
 #include "camera.h"
 
 #include "render/renderui.h"
+#include "render/model.h"
+#include "render/renderterrain.h"
 
-#define CHUNK_SIZE 20
 
 extern float deltaTime;
-
-class Chunk;
-bool rayTriangleIntersect(const glm::vec3 &orig, const glm::vec3 &dir, const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, float &t);
 
 class RenderObject {
 public:
@@ -47,36 +45,17 @@ private:
 };
 
 
-class Chunk {
-public:
-  Chunk(int x, int z);
-  void render();
-
-  void recalcNormals();
-  void genGPUBuffers();
-
-  void changeHeight(int x, int z, float difference);
-  void setColor(int x, int z, glm::vec3 color);
-  bool pickSquareFast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, int& outX, int& outZ);
-  bool pickSquare(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir, int &outX, int &outZ);
-  glm::vec3 position;
-
-private:
-  std::vector<float> vertices;
-  std::vector<float> normals;
-  std::vector<float> colors;
-  std::vector<unsigned int> indices;
-  GLuint VAO, VBO, NBO, CBO, EBO;
-};
-
-
 class RenderModel : public RenderObject {
+public:
   RenderModel(Shader* shader);
 
   void render(Camera &camera) override;
   void checkForClick(float xPos, float yPos, Camera &camera) override;
+  
+  
+  private:
+  std::vector<ModelObject*> models;
   Shader* shader;
-
 };
 
 
