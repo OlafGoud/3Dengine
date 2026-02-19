@@ -24,9 +24,10 @@ public:
 
 
   void keyboardInput(GLFWwindow *window, float deltaTime);
+  const int * getStructurePointer();
 
   Camera camera;
-  std::vector<RenderTerrain> renderObjects;
+  std::vector<RenderObject*> renderObjects;
 
 private:
 

@@ -33,6 +33,7 @@ User user = User();
 
 // ---------------- Main ----------------
 int main() {
+
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
@@ -46,81 +47,21 @@ int main() {
 
   glViewport(0,0,SCR_WIDTH,SCR_HEIGHT);
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   Shader terrainShader("bin/resources/shaders/terrain.vs", "bin/resources/shaders/terrain.fs");
+  Shader textShader("bin/resources/shaders/textshader.vs", "bin/resources/shaders/textshader.fs");
 
   user.setInputCallbacks(window);
-  user.renderObjects.push_back(RenderTerrain(&terrainShader));
+  user.renderObjects.push_back(new RenderTerrain(&terrainShader));
+  user.renderObjects.push_back(new RenderUI(&textShader));
 
-
-  // ---------------- Generate Grid (Non-Shared Vertices) ----------------
-  float half = GRID_SIZE / 2.0f;
-  std::vector<glm::vec3> gridPositions;
-  for(int z=0; z<=GRID_SIZE; z++){
-    for(int x=0; x<=GRID_SIZE; x++){
-      gridPositions.push_back(glm::vec3(x-half, (float)(rand()%10)/20.0f, z-half));
-    }
-  }
-
-  for(int z=0; z<GRID_SIZE; z++){
-    for(int x=0; x<GRID_SIZE; x++){
-      int topLeft     =  z      * (GRID_SIZE + 1) + x;
-      int topRight    =  topLeft + 1;
-      int bottomLeft  = (z + 1) * (GRID_SIZE + 1) + x;
-      int bottomRight =  bottomLeft + 1;
-
-      // First triangle
-      std::vector<glm::vec3> tri1 = { gridPositions[topLeft], gridPositions[bottomLeft], gridPositions[topRight] };
-      glm::vec3 normal1 = glm::normalize(glm::cross(tri1[1]-tri1[0], tri1[2]-tri1[0]));
-      for(auto &v : tri1){
-        vertices.push_back(v.x); vertices.push_back(v.y); vertices.push_back(v.z);
-        colors.push_back(1.0f); colors.push_back(1.0f); colors.push_back(1.0f);
-        normals.push_back(normal1.x); normals.push_back(normal1.y); normals.push_back(normal1.z);
-      }
-
-      // Second triangle
-      std::vector<glm::vec3> tri2 = { gridPositions[topRight], gridPositions[bottomLeft], gridPositions[bottomRight] };
-      glm::vec3 normal2 = glm::normalize(glm::cross(tri2[1]-tri2[0], tri2[2]-tri2[0]));
-      for(auto &v : tri2){
-        vertices.push_back(v.x); vertices.push_back(v.y); vertices.push_back(v.z);
-        colors.push_back(1.0f); colors.push_back(1.0f); colors.push_back(1.0f);
-        normals.push_back(normal2.x); normals.push_back(normal2.y); normals.push_back(normal2.z);
-      }
-    }
-  }
-
-  // ---------------- Buffers ----------------
-  glGenVertexArrays(1,&VAO);
-  glGenBuffers(1,&VBO);
-  glGenBuffers(1,&CBO);
-  glGenBuffers(1,&NBO);
-
-  glBindVertexArray(VAO);
-
-  // Vertex positions
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(float), vertices.data(), GL_STATIC_DRAW);
-  glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,3*sizeof(float),(void*)0);
-  glEnableVertexAttribArray(0);
-
-  // Colors
-  glBindBuffer(GL_ARRAY_BUFFER, CBO);
-  glBufferData(GL_ARRAY_BUFFER, colors.size()*sizeof(float), colors.data(), GL_DYNAMIC_DRAW);
-  glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,3*sizeof(float),(void*)0);
-  glEnableVertexAttribArray(1);
-
-  // Normals
-  glBindBuffer(GL_ARRAY_BUFFER, NBO);
-  glBufferData(GL_ARRAY_BUFFER, normals.size()*sizeof(float), normals.data(), GL_STATIC_DRAW);
-  glVertexAttribPointer(2,3,GL_FLOAT,GL_FALSE,3*sizeof(float),(void*)0);
-  glEnableVertexAttribArray(2);
-
-  glBindVertexArray(0);
-  // ---------------- Shader ----------------
-  Shader shader("bin/resources/shaders/shader.vs","bin/resources/shaders/shader.fs");
+  
   Shader modelshader("bin/resources/shaders/model.vs","bin/resources/shaders/model.fs");
+  
+  /** models */
   Model castle("bin/resources/models/castle.obj");
- // glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 
   std::vector<glm::mat4> transforms;
 
@@ -128,7 +69,6 @@ int main() {
     glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(rand() %10 - 5,0,rand()%10 - 5));
     m = glm::scale(m, glm::vec3(3.0f));
     transforms.push_back(m);
-    //std::cout << "added\n";
   }
   glDisable(GL_CULL_FACE);
 
@@ -138,32 +78,21 @@ int main() {
     float currentFrame = static_cast<float>(glfwGetTime());
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
-    std::cout << "framerate: " << (1/deltaTime) << "\n";
+//    std::cout << "framerate: " << (1/deltaTime) << "\n";
 
     glClearColor(0.1f,0.1f,0.1f,1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     user.keyboardInput(window, deltaTime);
 
-    shader.use();
-    glm::mat4 model = glm::mat4(1.0f);
-    view = user.camera.GetViewMatrix();
-    projection = user.camera.getProjectionMatrix();
-
-    shader.setMat4("uMVP", projection * view * model);
-    shader.setMat4("uModel", model);
-
-    // Lighting
-    shader.setVec3("lightPos", glm::vec3(30.0f, 30.0f, 30.0f));
-    shader.setVec3("viewPos", user.camera.Position);
-
-    glBindVertexArray(VAO);
-    //glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size()/3);
-
+    /** models */
     modelshader.use();
     glUniformMatrix4fv(glGetUniformLocation(modelshader.getID(), "view"), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(glGetUniformLocation(modelshader.getID(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
     castle.drawInstanced(transforms, modelshader.getID());
-    user.renderObjects.at(0).render(user.camera);
+
+    for(RenderObject* renderObject : user.renderObjects) {
+      renderObject->render(user.camera);
+    }
 
     glfwSwapBuffers(window);
     glfwPollEvents();

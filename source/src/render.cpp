@@ -1,5 +1,11 @@
 #include "render.h"
+#include "camera.h"
+#include "render/renderui.h"
+#include "shader.h"
 #include <iostream>
+#include "userinput.h"
+
+
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
@@ -9,7 +15,7 @@ RenderTerrain::RenderTerrain(Shader* shader) {
 
   int size = 20;
   for(int z = -size; z <= size; z++) for(int x = -size; x <= size; x++) {
-    chunks.push_back(Chunk(x, z));
+    chunkList.insert({makeKey(x, z), Chunk(x, z)});
   }
   //chunks.push_back(Chunk(0, 0));
 }
@@ -20,13 +26,14 @@ void RenderTerrain::render(Camera &camera) {
   shader->setMat4("projection", camera.getProjectionMatrix());
   shader->setMat4("view", camera.GetViewMatrix());
   
-  for(Chunk chunk : chunks) {
+  for(auto chunk : chunkList) {
     shader->setMat4("model", glm::mat4(1.0f));
-    chunk.render();
+    chunk.second.render();
   }
 }
 
 void RenderTerrain::checkForClick(float xPos, float yPos, Camera &camera) {
+  /** screen -> ray */
   float x = (2.0f * xPos) / SCR_WIDTH - 1.0f;
   float y = 1.0f - (2.0f * yPos) / SCR_HEIGHT;
   glm::vec4 ray_clip(x, y, -1.0f, 1.0f);
@@ -36,27 +43,54 @@ void RenderTerrain::checkForClick(float xPos, float yPos, Camera &camera) {
 
   glm::vec3 ray_world = glm::normalize(glm::vec3(glm::inverse(camera.GetViewMatrix()) * ray_eye));
 
-  int sqX, sqZ;
-  for(Chunk &chunk : this->chunks) {
-    if(chunk.pickSquare(camera.Position, ray_world, sqX, sqZ)) {
-      /** do shit */
-      chunk.setColor(sqX, sqZ, glm::vec3(0.1f, 0.01f, 1.0f));
-      chunk.changeHeight(sqX, sqZ, -0.1f);
-      std::cout << "x: " << sqX + chunk.position.x << ", z: " << sqZ + chunk.position.z << "\n"; 
-      break;
+
+  /** ray -> world coord on y=0 */
+  if (fabs(ray_world.y) < 0.0001f) return;
+
+  float t = -camera.Position.y / ray_world.y;
+  if (t < 0) return;
+
+  glm::vec3 hitPos = camera.Position + ray_world * t;
+
+  int baseChunkX = floor(hitPos.x / CHUNK_SIZE);
+  int baseChunkZ = floor(hitPos.z / CHUNK_SIZE);
+  std::cout << "x: " << hitPos.x << ", z: " << hitPos.z << "\n";
+
+  for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+    int cx = baseChunkX + dx;
+    int cz = baseChunkZ + dz;
+
+    Chunk* chunk = getChunk(cx, cz);
+    if(!chunk) continue;
+
+    int sqX, sqZ;
+    if(chunk->pickSquare(camera.Position, ray_world, sqX, sqZ)) {
+      chunk->setColor(sqX, sqZ, glm::vec3(0.1f, 0.01f, 1.0f));
+      chunk->changeHeight(sqX, sqZ, -0.1f);
+      std::cout << "x: " << sqX + chunk->position.x << ", z: " << sqZ + chunk->position.z << "\n"; 
     }
   }
 }
 
-Chunk::Chunk(int worldX, int worldZ) {
 
+long long RenderTerrain::makeKey(int x, int z) {
+  return ((long long) x << 32) | (unsigned int)z;
+}
+
+Chunk* RenderTerrain::getChunk(int x, int z) {
+  auto it = chunkList.find(makeKey(x, z));
+  if(it != chunkList.end()) return &it->second;
+
+  return nullptr;
+}
+
+
+
+Chunk::Chunk(int worldX, int worldZ) {
   this->position = glm::vec3(worldX * CHUNK_SIZE, 0.0f, worldZ * CHUNK_SIZE);
 
-  GRID_SIZE = CHUNK_SIZE;
-  float half = GRID_SIZE / 2.0f;
-
-  for (int z = 0; z <= GRID_SIZE; z++) {
-    for (int x = 0; x <= GRID_SIZE; x++) {
+  for (int z = 0; z <= CHUNK_SIZE; z++) {
+    for (int x = 0; x <= CHUNK_SIZE; x++) {
       vertices.push_back(x + (CHUNK_SIZE * worldX));
       vertices.push_back((float)(rand() % 3) / 4);
       vertices.push_back(z + (CHUNK_SIZE * worldZ));
@@ -71,11 +105,11 @@ Chunk::Chunk(int worldX, int worldZ) {
     }
   }
 
-  for (int z = 0; z < GRID_SIZE; z++) {
-    for (int x = 0; x < GRID_SIZE; x++) {
-      unsigned int tl = z * (GRID_SIZE + 1) + x;
+  for (int z = 0; z < CHUNK_SIZE; z++) {
+    for (int x = 0; x < CHUNK_SIZE; x++) {
+      unsigned int tl = z * (CHUNK_SIZE + 1) + x;
       unsigned int tr = tl + 1;
-      unsigned int bl = (z + 1) * (GRID_SIZE + 1) + x;
+      unsigned int bl = (z + 1) * (CHUNK_SIZE + 1) + x;
       unsigned int br = bl + 1;
 
       indices.insert(indices.end(), {tl, bl, tr, tr, bl, br});
@@ -233,6 +267,31 @@ bool Chunk::pickSquare(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir, int 
   return hit;
 }
 
+bool Chunk::pickSquareFast(const glm::vec3& rayOrigin, const glm::vec3& rayDir, int& outX, int& outZ) {
+  if (fabs(rayDir.y) < 0.0001f)
+    return false;
+
+  float t = -rayOrigin.y / rayDir.y;
+
+  if (t < 0)
+    return false;
+
+  glm::vec3 hitPos = rayOrigin + rayDir * t;
+
+  float half = CHUNK_SIZE / 2.0f;
+
+  int x = (int)floor(hitPos.x + half);
+  int z = (int)floor(hitPos.z + half);
+
+  if (x < 0 || x >= CHUNK_SIZE || z < 0 || z >= CHUNK_SIZE)
+    return false;
+
+  outX = x;
+  outZ = z;
+  return true;
+}
+
+
 
 bool rayTriangleIntersect(const glm::vec3 &orig, const glm::vec3 &dir, const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, float &t) {
   const float EPS = 0.0000001f;
@@ -261,3 +320,21 @@ bool rayTriangleIntersect(const glm::vec3 &orig, const glm::vec3 &dir, const glm
 }
 
 
+RenderUI::RenderUI(Shader* shader) {
+  this->shader = shader;
+
+  this->uiElements.push_back(new UIElementLabel(900, 1000, "GAME"));
+  this->uiElements.push_back(new UIElementFPSCounter(10, 1000, &deltaTime));
+  this->uiElements.push_back(new UIElementNumber(20, 20, user.getStructurePointer()));
+}
+
+void RenderUI::render(Camera &camera) {
+  for(UIElement* element : uiElements) {
+    element->render(this->shader);
+  }
+
+}
+
+void RenderUI::checkForClick(float, float, Camera&) {
+  
+}

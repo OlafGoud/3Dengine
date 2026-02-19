@@ -60,6 +60,18 @@ void User::keyboardInput(GLFWwindow *window, float deltaTime) {
     this->camera.ProcessKeyboard(RIGHT, deltaTime);
   }
 
+  if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && this->pressedKeys[GLFW_KEY_P] == 0) {
+    static int polyMode = 0;
+    if(polyMode == 1) {
+      glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+      polyMode = 0;
+    } else {
+      glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+      polyMode = 1;
+    }
+    this->pressedKeys[GLFW_KEY_P] = 1;
+  }
+
   
   if(glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS && this->pressedKeys[GLFW_KEY_1] == 0) {
     this->structure == 1 ? this->structure = -1 : this->structure = 1;
@@ -77,6 +89,9 @@ void User::keyboardInput(GLFWwindow *window, float deltaTime) {
   }
   if(glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE) {
     this->pressedKeys[GLFW_KEY_2] = 0;
+  }
+  if (glfwGetKey(window, GLFW_KEY_P) == GLFW_RELEASE) {
+    this->pressedKeys[GLFW_KEY_P] = 0;
   }
 
 }
@@ -106,7 +121,10 @@ void User::mouseButtonInput(GLFWwindow* window, int button, int action, int mods
       double xpos, ypos;
       glfwGetCursorPos(window, &xpos, &ypos);
 
-      this->renderObjects.at(0).checkForClick(xpos, ypos, user.camera);
+
+
+      /** @todo iterate over all begin ui and end at terrain */
+      this->renderObjects.at(0)->checkForClick(xpos, ypos, user.camera);
     }
   }
   
@@ -184,4 +202,8 @@ void User::calculateClickPosition(GLFWwindow* window) {
     glBufferSubData(GL_ARRAY_BUFFER, 0, colors.size()*sizeof(float), colors.data());
     std::cout << "Triangle clicked: vertices " << hitTri << " to " << hitTri+8 << "\n";
   }
+}
+
+const int * User::getStructurePointer() {
+  return &this->structure;
 }
