@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <vector>
 #include "render.h"
+#include "events.h"
+
 
 class User {
 public:
@@ -18,10 +20,11 @@ public:
 
 
   void keyboardInput(GLFWwindow *window, float deltaTime);
-  const int * getStructurePointer();
+  const int* getStructurePointer();
 
   Camera camera;
   std::vector<RenderObject*> renderObjects;
+  EventManager eventManager{};
 
 private:
 

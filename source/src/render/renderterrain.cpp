@@ -1,25 +1,70 @@
 #include "render/renderterrain.h"
+#include "render/FastNoiseLite.h"
+#include <vector>
+#include <string>
+#include <iostream>
+int countColors[5]{};
 
+glm::vec3 colorFromHex6(std::string color) {
+  int idx = 0;
+  if(color[0] == '#') idx = 1;
+  
+  float outColor[3];
+  
+  for(int i = 0; i < 3; i++) {
+    int number = 0;
+    for(int n = 1; n >= 0; n--) {
+      char c = color[idx++];
+      if(c >= '0' && c <= '9') {
+        number += (c - '0') * pow(16, n);
+      } else if (c >= 'a' && c <= 'f') {
+        number += (c - 'a' + 10) * pow(16, n);
+      } else if (c >= 'A' && c <= 'F') {
+        number += (c - 'A' + 10) * pow(16, n);
+      } else {
+        std::cout << "ERROR::HEX::WRONG_CHARACTER: " << c << "\n"; 
+        return glm::vec3(0.0f);
+      }
+
+    }
+    outColor[i] = ((float)number / 256);
+  }
+  //std::cout << "r: " << outColor[0]*256 << ", g: " << outColor[1]*256 << ", b: " << outColor[2]*256 << ", hex: " << color << "\n";
+  return glm::vec3(outColor[0], outColor[1], outColor[2]);
+
+}
 
 
 Chunk::Chunk(int worldX, int worldZ) {
   this->position = glm::vec3(worldX * CHUNK_SIZE, 0.0f, worldZ * CHUNK_SIZE);
+  FastNoiseLite noise;
+  noise.SetSeed(2020);
+  noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 
-  for (int z = 0; z <= CHUNK_SIZE; z++) {
-    for (int x = 0; x <= CHUNK_SIZE; x++) {
+  std::vector<glm::vec3> col;
+  col.push_back(colorFromHex6("#0e1d9e"));
+  col.push_back(colorFromHex6("#096a11"));
+  col.push_back(colorFromHex6("#343434"));
+  col.push_back(colorFromHex6("#b1b1b1"));
+
+  for (int z = -1; z < CHUNK_SIZE; z++) {
+    for (int x = -1; x < CHUNK_SIZE; x++) {
       vertices.push_back(x + (CHUNK_SIZE * worldX));
-      vertices.push_back((float)(rand() % 3) / 4);
+      vertices.push_back(noise.GetNoise(x + position.x, z + position.z) * 30);
       vertices.push_back(z + (CHUNK_SIZE * worldZ));
 
       normals.push_back(0);
       normals.push_back(1);
       normals.push_back(0);
 
-      colors.push_back(0.4f);
-      colors.push_back(0.8f);
-      colors.push_back(0.4f);
+      int groundColor = (int)((noise.GetNoise(x + position.x, z + position.z) * 2) + 2); /** color from 0 - 4 */
+      colors.push_back(col[groundColor].r);
+      colors.push_back(col[groundColor].g); 
+      colors.push_back(col[groundColor].b);
+      //countColors[groundColor]++;
     }
-  }
+  }  
+  //std::cout << "[1]blue: " << countColors[0] << ", [2]lime: " << countColors[1] << ", [3]green: " << countColors[2] << ", [4]red: " << countColors[3] << ", [5]not exist: " << countColors[4] << "\n"; 
 
   for (int z = 0; z < CHUNK_SIZE; z++) {
     for (int x = 0; x < CHUNK_SIZE; x++) {

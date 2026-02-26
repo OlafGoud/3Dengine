@@ -59,9 +59,12 @@ void RenderTerrain::checkForClick(float xPos, float yPos, Camera &camera) {
 
     int sqX, sqZ;
     if(chunk->pickSquare(camera.Position, ray_world, sqX, sqZ)) {
-      chunk->setColor(sqX, sqZ, glm::vec3(0.1f, 0.01f, 1.0f));
-      chunk->changeHeight(sqX, sqZ, -0.1f);
-      std::cout << "x: " << sqX + chunk->position.x << ", z: " << sqZ + chunk->position.z << "\n"; 
+      if(user.eventManager.isEvent("Color_Blue")) {
+        chunk->setColor(sqX, sqZ, glm::vec3(0.1f, 0.01f, 1.0f));
+        //chunk->changeHeight(sqX, sqZ, -0.1f);
+        std::cout << "x: " << sqX + chunk->position.x << ", z: " << sqZ + chunk->position.z << "kkk\n"; 
+      }
+      std::cout << user.eventManager.isEvent("Color_Blue") << '\n';
     }
   }
 }

@@ -72,9 +72,11 @@ void User::keyboardInput(GLFWwindow *window, float deltaTime) {
 
   
   if(glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS && this->pressedKeys[GLFW_KEY_1] == 0) {
+    this->structure == 1 ? this->eventManager.removeEvent("Color_Blue") : this->eventManager.setEvent("Color_Blue");
     this->structure == 1 ? this->structure = -1 : this->structure = 1;
     std::cout << "number: " << this->structure << "\n";
     this->pressedKeys[GLFW_KEY_1] = 1;
+    
   }
   if(glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS && this->pressedKeys[GLFW_KEY_2] == 0) {
     this->structure == 2 ? this->structure = -1 : this->structure = 2;
