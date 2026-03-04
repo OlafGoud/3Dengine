@@ -59,12 +59,12 @@ void RenderTerrain::checkForClick(float xPos, float yPos, Camera &camera) {
 
     int sqX, sqZ;
     if(chunk->pickSquare(camera.Position, ray_world, sqX, sqZ)) {
-      if(user.eventManager.isEvent("Color_Blue")) {
+      //if(user.eventManager.isEvent("Color_Blue")) {
         chunk->setColor(sqX, sqZ, glm::vec3(0.1f, 0.01f, 1.0f));
         //chunk->changeHeight(sqX, sqZ, -0.1f);
         std::cout << "x: " << sqX + chunk->position.x << ", z: " << sqZ + chunk->position.z << "kkk\n"; 
-      }
-      std::cout << user.eventManager.isEvent("Color_Blue") << '\n';
+      //}
+      //std::cout << user.eventManager.isEvent("Color_Blue") << '\n';
     }
   }
 }
@@ -122,5 +122,28 @@ void RenderModel::render(Camera &camera) {
 
 
 void RenderModel::checkForClick(float xPos, float yPos, Camera &camera) {
+
+}
+
+SphereRenderer::SphereRenderer(Shader* shader) {
+  this->shader = shader;
+
+  this->spheres.push_back(new Sphere(glm::vec3(0.0f, 5.0f, 0.0f), 5, 16));
+  this->spheres.push_back(new Sphere(glm::vec3(2.0f, 2.0f, 4.0f), 2, 16));
+}
+
+void SphereRenderer::render(Camera &camera) {
+  this->shader->use(); 
+  this->shader->setMat4("view", camera.GetViewMatrix());
+  this->shader->setMat4("projection", camera.getProjectionMatrix());
+
+  for(Sphere* object : spheres) {
+    shader->setMat4("model", glm::translate(glm::mat4(1.0f), object->position));
+    object->render();
+  }
+}
+
+
+void SphereRenderer::checkForClick(float xPos, float yPos, Camera &camera) {
 
 }

@@ -12,7 +12,7 @@
 #include "render/renderui.h"
 #include "render/model.h"
 #include "render/renderterrain.h"
-
+#include "render/rendersphere.h"
 
 extern float deltaTime;
 
@@ -71,3 +71,15 @@ private:
   std::vector<UIElement*> uiElements;
 };
 
+
+class SphereRenderer : public RenderObject {
+public:
+  SphereRenderer(Shader* shader);
+
+  void render(Camera &camera) override;
+  void checkForClick(float xPos, float yPos, Camera &camera) override;
+  Shader* shader;
+
+private:
+  std::vector<Sphere*> spheres;
+};

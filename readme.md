@@ -33,3 +33,14 @@ TILE (square 2 triangles)
 - Structure
   - farmland.
   - settlement.
+
+
+NOTE:
+```
+& -> borrow object
+* -> i know where you live and i change shit there
+&& -> steal object
+** -> I know where to find where you live
+*& -> I can change where you point to
+
+```

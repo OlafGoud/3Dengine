@@ -1,22 +1,43 @@
-#include "userinput.h"
-#include "GLFW/glfw3.h"
-#include "camera.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <iostream>
+
+#include "camera.h"
+#include "userinput.h"
+
+#include "event/inputevents.h"
+#include "eventmanager.h"
+
+User user = User();
+User& getUser() {
+  return user;
+}
+
+Camera& getUserCamera() {
+  return user.getCamera();
+}
 
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-  user.mouseScrollInput(yoffset);
+  getEventManager().activateEvent(MouseScrollEvent(window, &getUserCamera(), static_cast<float>(xoffset), static_cast<float>(yoffset)));
 }
+
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
-  user.mouseMovementInput(window, static_cast<float>(xposIn), static_cast<float>(yposIn));
+  getEventManager().activateEvent(MouseMoveEvent(window, &getUserCamera(), static_cast<float>(xposIn), static_cast<float>(yposIn)));
 }
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+  getEventManager().activateEvent(MouseButtonEvent(window, &getUserCamera(), button, action, mods));
+}
+
+void keyboard_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  getEventManager().activateEvent(KeyBoardEvent(window, key, scancode, action, mods));
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, width, height);
-  user.camera.SCR_WIDTH = width;
-  user.camera.SCR_HEIGHT = height;
-}
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-  user.mouseButtonInput(window, button, action, mods);
+  getUserCamera().SCR_WIDTH = width;
+  getUserCamera().SCR_HEIGHT = height;
 }
 
 User::User() {
@@ -25,7 +46,6 @@ User::User() {
   /** Red Green Blue */
   this->structureColors[1] = glm::vec3(0.2f, 0.8f, 0.1);
   this->structureColors[2] = glm::vec3(0.05f, 0.1f, 1.0f);
-
 }
 
 void User::setInputCallbacks(GLFWwindow *window) {
@@ -33,7 +53,11 @@ void User::setInputCallbacks(GLFWwindow *window) {
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
+  glfwSetKeyCallback(window, keyboard_key_callback);
+}
 
+void User::addRenderObject(RenderObject* obj) {
+  renderObjects.push_back(obj);
 }
 
 
@@ -72,7 +96,8 @@ void User::keyboardInput(GLFWwindow *window, float deltaTime) {
 
   
   if(glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS && this->pressedKeys[GLFW_KEY_1] == 0) {
-    this->structure == 1 ? this->eventManager.removeEvent("Color_Blue") : this->eventManager.setEvent("Color_Blue");
+    
+
     this->structure == 1 ? this->structure = -1 : this->structure = 1;
     std::cout << "number: " << this->structure << "\n";
     this->pressedKeys[GLFW_KEY_1] = 1;
@@ -96,45 +121,9 @@ void User::keyboardInput(GLFWwindow *window, float deltaTime) {
 
 }
 
-void User::mouseScrollInput(double yoffset) {
-  this->camera.ProcessMouseScroll(static_cast<float>(yoffset));
-}
 
-void User::mouseMovementInput(GLFWwindow* window, float xposIn, float yposIn) {
-  if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-    this->camera.ProcessMouseRotation(xposIn - lastX, lastY - yposIn);
-  }
-  if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS) {
-    this->camera.ProcessMouseXYMovement(yposIn - lastY, lastX - xposIn);
-  }
-
-  lastX = static_cast<float>(xposIn);
-  lastY = static_cast<float>(yposIn);
-
-}
-
-void User::mouseButtonInput(GLFWwindow* window, int button, int action, int mods) {
-  if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-    if(this->structure > 0 && this->structure < 3) {
-      /** build structure */
-      //calculateClickPosition(window);
-      double xpos, ypos;
-      glfwGetCursorPos(window, &xpos, &ypos);
-
-
-
-      /** @todo iterate over all begin ui and end at terrain */
-      this->renderObjects.at(0)->checkForClick(xpos, ypos, user.camera);
-    }
-  }
-  
-  if(button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-
-  } 
-  
-  if(button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS) {
-    
-  }
+Camera& User::getCamera() {
+  return camera;
 }
 
 const int * User::getStructurePointer() {

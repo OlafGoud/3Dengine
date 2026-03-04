@@ -31,7 +31,6 @@ glm::vec3 colorFromHex6(std::string color) {
   }
   //std::cout << "r: " << outColor[0]*256 << ", g: " << outColor[1]*256 << ", b: " << outColor[2]*256 << ", hex: " << color << "\n";
   return glm::vec3(outColor[0], outColor[1], outColor[2]);
-
 }
 
 
@@ -117,7 +116,6 @@ void Chunk::recalcNormals() {
     normals[i + 1] = n.y;
     normals[i + 2] = n.z;
   }
-
 }
 
 
