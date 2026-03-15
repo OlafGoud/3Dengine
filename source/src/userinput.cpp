@@ -9,14 +9,13 @@
 #include "eventmanager.h"
 
 User user = User();
-User& getUser() {
+inline User& getUser() {
   return user;
 }
 
-Camera& getUserCamera() {
+inline Camera& getUserCamera() {
   return user.getCamera();
 }
-
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
   getEventManager().activateEvent(MouseScrollEvent(window, &getUserCamera(), static_cast<float>(xoffset), static_cast<float>(yoffset)));
@@ -57,8 +56,9 @@ void User::setInputCallbacks(GLFWwindow *window) {
 }
 
 void User::addRenderObject(RenderObject* obj) {
-  renderObjects.push_back(obj);
+  renderObjects.push_back(obj); 
 }
+
 
 
 void User::keyboardInput(GLFWwindow *window, float deltaTime) {
@@ -122,10 +122,10 @@ void User::keyboardInput(GLFWwindow *window, float deltaTime) {
 }
 
 
-Camera& User::getCamera() {
+inline Camera& User::getCamera() {
   return camera;
 }
 
-const int * User::getStructurePointer() {
+const int* User::getStructurePointer() {
   return &this->structure;
 }

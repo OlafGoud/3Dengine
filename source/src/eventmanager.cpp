@@ -15,6 +15,4 @@ EventManager& getEventManager() {
  * 
  */
 
-EventManager::EventManager() {
-
-}
+EventManager::EventManager() {}

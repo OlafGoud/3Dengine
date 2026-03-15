@@ -1,0 +1,161 @@
+direction: up
+
+# Connections
+
+
+## Event Manager
+Event->EventManager: has {
+  source-arrowhead: *
+  target-arrowhead: 1 {
+    shape: diamond
+    style.filled: true
+  }
+}
+
+
+KeyBoardEvent->Event: {
+  target-arrowhead: {
+    shape: triangle
+  }
+}
+
+MouseScrollEvent->Event: {
+  target-arrowhead: {
+    shape: triangle
+  }
+}
+
+MouseMoveEvent->Event: {
+  target-arrowhead: {
+    shape: triangle
+  }
+}
+
+MouseButtonEvent->Event: {
+  target-arrowhead: {
+    shape: triangle
+  }
+}
+
+## Render systems
+
+RenderSystem->RenderManager: has {
+  source-arrowhead: *
+  target-arrowhead: 1 {
+    shape: diamond
+    style.filled: true
+  }
+}
+
+UIRenderSystem->RenderSystem: {
+  target-arrowhead: {
+    shape: triangle
+  }
+}
+
+TerrainRenderSystem->RenderSystem: {
+  target-arrowhead: {
+    shape: triangle
+  }
+}
+
+
+
+
+
+
+
+
+
+# ----------------------------------------------------------------------------------------
+# Blocks
+# ----------------------------------------------------------------------------------------
+
+EventManager : {
+  shape : class
+  - listeners: "map<type_index, vector<function>>"
+  + registerEvent(callback function)
+  + activateEvent(event EventType\&)
+}
+
+
+## Events
+
+Event: {
+  shape: class
+}
+
+### Input events
+
+KeyBoardEvent: {
+  shape: class
+  KeyBoardEvent()
+  window: GLFWwindow*
+  key: int
+  scancode: int
+  action: int
+  modifiers: int
+}
+
+MouseScrollEvent: {
+  shape: class
+  MouseScrollEvent()
+  window: GLFWwindow*
+  camera: Camera*
+  xOffset: float
+  yOffset: float
+}
+
+MouseMoveEvent: {
+  shape: class
+  MouseMoveEvent()
+  window: GLFWwindow*
+  camera: Camera*
+  xOffset: float
+  yOffset: float
+}
+
+MouseButtonEvent: {
+  shape: class
+  MouseButtonEvent()
+  window: GLFWwindow* 
+  camera: Camera* 
+  button: int 
+  action: int 
+  modifiers: int 
+}
+
+
+## Render
+
+RenderManager: {
+  shape: class
+  RenderManager()
+
+  - renderSystems: "vector<RenderSystem>"
+  render()
+}
+
+RenderSystem: {
+  shape: class
+  render()
+  RenderSystem()
+}
+
+UIRenderSystem: {
+  shape: class
+  UIRenderSystem()
+  render()
+}
+
+TerrainRenderSystem: {
+  shape: class
+  TerrainRenderSystem()
+  render()
+}
+
+ObjectRenderSystem: {
+  shape: class
+  ObjectRenderSystem()
+  render()
+}

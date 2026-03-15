@@ -88,7 +88,7 @@ RenderUI::RenderUI(Shader* shader) {
 
   this->uiElements.push_back(new UIElementLabel(900, 1000, "GAME"));
   this->uiElements.push_back(new UIElementFPSCounter(10, 1000, &deltaTime));
-  this->uiElements.push_back(new UIElementNumber(20, 20, user.getStructurePointer()));
+  this->uiElements.push_back(new UIElementNumber(20, 20, getUser().getStructurePointer()));
 }
 
 void RenderUI::render(Camera &camera) {
